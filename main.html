@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang = "en">
+    <head>
+        <meta charset = "UTF-8" />
+        <title> Evolution Simulation</title>
+        <style>
+            html, body {
+                margin: 0;
+                background-color: black;
+                overflow: hidden;
+                color: white;
+                font-family: monospace;
+            }
+            #ui {
+                position: fixed;
+                top: 10px; 
+                left: 10px;
+                font-size: 14px;
+            }
+        </style>
+    </head>
+    <body>
+    <canvas id="c"></canvas>
+    <div id="ui"></div>
+
+    <script>
+        const canvas = document.getElementById("c");
+        const ctx = canvas.getContext("2d");
+        const ui = document.getElementById("ui");
+
+        function resize() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+        window.addEventListener("resize", resize);
+        resize();
+
+        // BASE PARAMETERS
+        const START_POP = 50;
+        const ENERGY_FROM_SIZE = 25;
+        const BASE_METABOLISM = 0.008;
+        const MUTATION = 0.03;
+
+            // ORGANISM
+            class Organism {
+                constructor(x, y, parent = null) {
+                    if (parent) {
+                        this.size = parent.size * rand(1 - MUTATION, 1 + MUTATION);
+                        this.speed = parent.speed * rand(1 - MUTATION, 1 + MUTATION);
+                        this.size = clamp(this.size, 0.5, 35);
+                        this.activity = clamp(parent.activity + rand(-0.5, 0.5), 0, 1);
+                    } else {
+                        this.size = rand(0.5, 5);
+                        this.speed = rand(0.6, 1.2);
+                        this.activity = Math.random();
+                    }
+
+                    this.energy = this.size * 15;
+                    this.x = x;
+                    this.y = y;
+                    this.vx = rand(-1, 1);
+                    this.vy = rand(-1, 1);
+                    this.dead = false;
+                }
+
+                update(list) {
+                    //movement
+                    if (Math.random() < this.activity) {
+                        const target = this.findPrey(list);
+                        if (target) {
+                            const dx = target.x - this.x;
+                            const dy = target.y - this.y;
+                            const d = Math.hypot(dx, dy) || 1;
+                            this.vx = dx / d;
+                            this.vy = dy / d;
+                            this.size *= 0.999
+                        }
+
+                }
+
+                this.x += this.vx * this.speed;
+                this.y += this.vy * this.speed;
+
+                    wrap(this);
+                    // energy
+                    this.energy -= BASE_METABOLISM * (this.size ** 1.5 + this.speed * 5);
+                    // reproduction
+                    if (this.energy > this.size * 15) {
+                        this.energy *= 0.7;
+                        list.push(new Organism(this.x, this.y, this));
+                    }
+
+                    if (this.energy <= 0) this.dead = true;
+
+                    }
+                findPrey(list) {
+                    let best = null;
+                    let dist = Infinity;
+                    for (const o of list) {
+                        if (o == this || o.dead) continue;
+                        if (this.size > o.size * 1.1) {
+                            const d = distance(this, o);
+                            if (d < dist && d < 500) {
+                                dist = d;
+                                best = o;
+                            }
+                        }
+
+                    }
+
+                    return best;
+                }    
+                draw() {
+                    ctx.beginPath();
+                    ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                    ctx.fillStyle = "white";
+                    ctx.fill();
+                }
+                }
+
+            // UTILS
+            function rand(a, b) {
+                return a + Math.random() * (b - a);
+            }
+            function clamp(v, a, b) {
+                return Math.max(a, Math.min(b, v));
+            }
+            function distance (a,b) {
+                return Math.hypot(a.x - b.x, a.y - b.y);
+            }
+            function wrap(o) {
+                if (o.x < 0) o.x += canvas.width;
+                if (o.y < 0) o.y += canvas.height;
+                if (o.x > canvas.width) o.x -= canvas.width;
+                if (o.y > canvas.height) o.y -= canvas.height;
+            }
+
+            // SIMULATION LOOP
+            let organisms = [];
+            for (let i = 0; i < START_POP; i++) {
+                organisms.push(
+                    new Organism(
+                        Math.random() * canvas.width,
+                        Math.random() * canvas.height
+                    )
+                );
+            }
+
+            function checkPredation() {
+                    for (const a of organisms) {
+                        for (const b of organisms) {
+                            if (a === b || a.dead || b.dead) continue;
+                            const dx = a.x - b.x;
+                            const dy = a.y - b.y;
+                                if (dx*dx + dy*dy < a.size*a.size && a.size > b.size*1.2) {
+                                    a.energy += b.size * ENERGY_FROM_SIZE;
+                                    b.dead = true;
+                                }
+                            }
+                        }
+                    }
+            
+            let frameCount = 0;
+
+            function step() {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                for (const o of organisms) o.update(organisms);
+                // predation
+                frameCount++;
+                if (frameCount % 3 === 0) checkPredation();
+
+                organisms = organisms.filter(o => !o.dead);
+                for (const o of organisms) o.draw();
+                ui.textContent = `Population: ${organisms.length}`;
+                requestAnimationFrame(step);
+            }
+            step();
+    </script>
+    </body>
+</html>
