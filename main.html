@@ -240,8 +240,8 @@
                 organisms = organisms.filter(o => !o.dead);
                 for (const o of organisms) o.draw();
                 ui.textContent = `Population: ${organisms.length}`;
-                requestAnimationFrame(step);
                 if (showGraph) drawGraph();
+                requestAnimationFrame(step);
             }
             step();
     </script>
