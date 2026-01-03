@@ -254,20 +254,17 @@
                         }
 
                 }
-                this.size -= params.decay * this.size * dt; 
+                this.size -= params.decay * this.size; 
                 this.x += this.vx * this.speed * dt;
                 this.y += this.vy * this.speed * dt;
 
                     wrap(this);
                     // energy
-                    this.energy -= params.metabolism * (this.size ** 1.5 + this.speed * 5) * dt;
+                    this.energy -= params.metabolism * (this.size ** 1.5 + this.speed * 5);
                     // reproduction
                     if (this.energy > this.size * 15) {
                         this.energy *= 0.7;
                         list.push(new Organism(this.x, this.y, this));
-                        if (!lineageStats.has(this.lineage)) {
-                            lineageStats.set(this.lineage, {alive: 0, maxGen: 0});
-                        }
                     }
 
                     if (this.energy <= 0 && !this.dead) {
